@@ -16,9 +16,11 @@ prod_line_cv = [0.66, 1, 1.33]
 class WorkstationManager:
     def __init__(self):
         self.workstations = {}
+        self.workstation_id_counter = 0
 
     def add_workstation(self, workstation):
-        self.workstations[workstation.id] = workstation
+        self.workstations[self.workstation_id_counter] = workstation
+        self.workstation_id_counter += 1
 
     def get_workstation(self, id):
         return self.workstations.get(id)
@@ -36,9 +38,11 @@ class WorkstationManager:
 class JobManager:
     def __init__(self):
         self.jobs = {}
+        self.job_id_counter = 0
 
     def add_job(self, job):
-        self.jobs[job.id] = job
+        self.jobs[self.job_id_counter] = job
+        self.job_id_counter += 1
 
     def get_job(self, id):
         return self.jobs.get(id)
@@ -74,7 +78,9 @@ class EventManager:
             job_id: The ID of the job associated with the event (if applicable).
             workstation_id: The ID of the workstation associated with the event (if applicable).
         """
-        event = (time, event_type, job_id, workstation_id) # create a tuple to represent the event
+        event = (self.event_id_counter, time, event_type, job_id, workstation_id)
+        self.event_id_counter += 1
+
         heapq.heappush(self.events, event)
 
     def get_next_event(self):
@@ -99,6 +105,7 @@ class EventManager:
 class SourceManager:
     def __init__(self):
         self.sources = []
+        self.source_id_counter = 0
 
     def add_source(self, id, source_type, source_parameters):
         return 1
@@ -144,7 +151,7 @@ class Job:
 ### Job.status = {"Pending", "WIP", "Idle", "Complete"}
 ### Workstation.status = {"Starvation", "Congestion", "Processing"}
 ### Event.status = {"job_arrived", "job_processing", "job_waiting", 
-###                 "job_completed", "workstation_ready", 
+###                 "job_phase_ready", "job_completed", "workstation_ready", 
 ###                 "workstation_starvation", "workstation_congestion"}
 
 class Event:

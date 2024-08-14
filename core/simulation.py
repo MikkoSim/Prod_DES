@@ -8,7 +8,6 @@
 import numpy as np
 import csv
 import random
-from core.simulation import *
 from core.resources import *
 
 
@@ -19,42 +18,39 @@ job_list = JobManager()
 event_list = EventManager()
 
 """
-Generates a list of jobs with production order ID, mean process time,
-coefficient of variation, status, and location in routing.
-
+Creates jobs. Updates JobManager with new jobs and creates events "job_arrival".
 Args:
-    num_jobs: The number of jobs to generate.
-    routing: The routing (sequence of workstations) for all jobs.
-    mean_process_time_range: A tuple (min, max) specifying the range for mean process times.
-    cv_options: A list of possible coefficient of variation values.
+
 
 Returns:
-    A list of dictionaries representing the jobs.
+
 """
 
 
-def generate_jobs(num_jobs, routing, mean_process_time_range, cv_options):
+def create_jobs(num_jobs, cv_options):
     for i in range(num_jobs):
         job = Job(i, 0, 0, random.uniform(30, 30), "Pending", random.choice(cv_options), 0)
         job.calculate_job_std()
-        job_list.add_workstation(job)
+        job_list.add_job(job)
+        event_list.add_event(t, "job_arrival", job.id)
+        
     export_jobs_to_csv(job_list, filename="jobs.csv")
 
-def create_jobs(num_jobs, cv_options, job_manager, event_manager):
-    for i in range(num_jobs):
-        job = Job(i, 0, 0, random.uniform(30, 30), "Pending", random.choice(cv_options), 0)
-        job.calculate_job_std()
-        job_manager.add_job(job)
-        event_manager.add_event(i, "job_arrival", job_id=job.id)
-    export_jobs_to_csv(job_list, filename="jobs.csv")
+"""
+Creates single non-parallel workstations in series. Updates workstation manager with new workstations and creates events for empty workstations.
+
+
+"""
+
 
 def create_workstations(num_workstations, cv_options, workstation_manager, event_manager):
     for i in range(num_workstations):
-        workstation = Workstation(i, (i + 1), 0, 1, random.choice(cv_options), 0, "Vacant", 0, 0)
+        new_workstation_id = production_line.workstation_id_counter
+        workstation = Workstation(i, new_workstation_id, 0, 1, random.choice(cv_options), 0, "Vacant", 0, 0)
         workstation.calculate_workstation_std()
         production_line.add_workstation(workstation)
-        event_list.add_event()
-        ### KESKEN !!! ###
+        event_list.add_event(t, "workstation_starvation", -1, new_workstation_id)
+        new_workstation_id += 1
     return 1
 
 
@@ -108,23 +104,53 @@ def run_simulation():
             handle_workstation_congestion()
 
 
+"""
+ARRIVE  =>  PROCESS          =>          PHASE_READY     =>     ARRIVE
+    =>  WAITING                             =>      COMPLETION
+          =>  PROCESS         
+"""
 
 
 
+
+"""
+If workstation == None, then job has to be at the beginning of routing.
+    => Place job at first routing step with vacant workstation
+    If vacant workstation is found
+        => Create job_processing event
+    If vacant workstation is NOT found
+        => Create job_waiting event
+
+
+If workstation > 0, then routing is incremented.
+    => Place job to incremented vacant workstation
+    If vacant workstation is found
+        => Create job_processing event
+    If vacant workstation is NOT found
+        => Create job_waiting event
+     
+
+"""
 
 def handle_job_arrival(job_id, workstation_id):
     job = job_list.get_job(job_id)
     workstation = production_line.get_workstation(workstation_id)
-
-    if workstation_is_found:
+    requested_routing = job_list.get_job_routing(job_id)
+    if workstation_is_found(requested_routing):
 
         processing_time = calculate_processing_time(job, workstation)
 
-        event_list.add_event(t + processing_time, "job_completion", job_id = job.id, workstation_id = workstation.id)
+        event_list.add_event(t, "job_processing", job_id = job.id, workstation_id = workstation.id)
 
     else:
-        return 1
-        #if workstation is NOT available...
+        event_list.add_event(t, "job_waiting", job_id = job.id, workstation_id = workstation.id)
+
+
+"""
+Schedule next open workstation in next routing.
+
+"""
+
 
 def handle_job_waiting(job_id, workstation_id, job_manager, workstation_manager, event_manager):
     job = job_list.get_job(job_id)
@@ -138,10 +164,40 @@ def handle_job_waiting(job_id, workstation_id, job_manager, workstation_manager,
         return 1
         # should we start recoring waiting time???
 
+"""
+Check if routing is available.
 
-def handle_job_completion(job_id, workstation_id, job_manager, workstation_manager, event_manager):
-    job = job_manager.get_job(job_id)
-    workstation = workstation_manager.get_workstation(workstation_id)
+This acts as placeholder for transportation events. Without an event, transportation happens instantly.
+
+If workstation > 1, then job has to be at the beginning of routing.
+    => Place job at incremented workstation
+    If vacant workstation is found
+        => Create job_processing event
+    If vacant workstation is NOT found
+        => Create job_waiting event
+
+
+If workstation == routing length
+    => Schedule completion event
+
+"""
+
+
+def handle_job_phase_ready(job_id, workstation_id):
+    job = job_list.get_job(job_id)
+    workstation = production_line.get_workstation(workstation_id)
+
+
+
+"""
+Remove job from system. Collect any data.
+
+"""
+
+
+def handle_job_completion(job_id, workstation_id):
+    job = job_list.get_job(job_id)
+    workstation = production_line.get_workstation(workstation_id)
 
     if job_has_more_steps_in_routing:
         return 1
@@ -152,9 +208,21 @@ def handle_job_completion(job_id, workstation_id, job_manager, workstation_manag
         # job is completed, remove from system
 
 
+"""
+Schedule phase ready event.
+Calculate processing time.
 
-def handle_job_processing():
-    
+"""
+
+
+def handle_job_processing(job_id, workstation_id):
+    job = job_list.get_job(job_id)
+    workstation = production_line.get_workstation(workstation_id)
+    requested_routing = job_list.get_job_routing(job_id)
+
+    processing_time = calculate_processing_time(job, workstation)
+    event_list.add_event(t + processing_time, "job_phase_ready", job_id = job.id, workstation_id = workstation.id)
+
     return 1
 
 
