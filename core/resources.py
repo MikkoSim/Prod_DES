@@ -12,18 +12,25 @@ prod_line = [1,1,1]
 prod_line_var = [0,0,0]
 prod_line_cv = [0.66, 1, 1.33]
 
-
+### def __init__(self, id, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed):
 class WorkstationManager:
     def __init__(self):
         self.workstations = {}
-        self.workstation_id_counter = 0
+        self.workstation_id_counter = 1
 
-    def add_workstation(self, workstation):
+    def add_workstation(self, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed):
+        workstation = Workstation(self.workstation_id_counter, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed)
+        workstation.calculate_workstation_std()
         self.workstations[self.workstation_id_counter] = workstation
         self.workstation_id_counter += 1
 
     def get_workstation(self, id):
-        return self.workstations.get(id)
+        workstation = self.workstations.get(id)
+        if workstation:
+            return workstation
+        else:
+            print(f"Error (get_workstation): Workstation with ID {id} not found!")
+            return None
     
     def update_workstation(self, id):
         print("Unfinished\r\n")
@@ -32,15 +39,22 @@ class WorkstationManager:
     def remove_workstation(self, id):
         print("Unfinished\r\n")
         return 0
+    
+    def search_vacant_workstation_in_routing(self, location):
+        for workstation in self.workstations.values():
+            if workstation.location == location and workstation.status == 'Vacant':
+                return True
+        return False
 
-
-
+### def __init__(self, id, routing, true_process_time, mean_process_time, status, cv, std):
 class JobManager:
     def __init__(self):
         self.jobs = {}
-        self.job_id_counter = 0
+        self.job_id_counter = 1
 
-    def add_job(self, job):
+    def add_job(self, location, true_process_time, mean_process_time, status, cv, std):
+        job = Job(self.job_id_counter, location, true_process_time, mean_process_time, status, cv, std)
+        job.calculate_job_std()
         self.jobs[self.job_id_counter] = job
         self.job_id_counter += 1
 
@@ -50,9 +64,9 @@ class JobManager:
     def get_job_routing(self, id):
         job = self.jobs.get(id)
         if job:
-            return job.routing
+            return job.location
         else:
-            print("Error: Job with ID {id} not found!")
+            print(f"Error (get job): Job with ID {id} not found!")
             return None
     
     def update_job(self, id):
@@ -66,7 +80,7 @@ class JobManager:
 class EventManager:
     def __init__(self):
         self.events = [] # converted into heap later...
-        self.event_id_counter = 0
+        self.event_id_counter = 1
     
     def add_event(self, time, event_type, job_id=None, workstation_id=None):
         """
@@ -78,10 +92,12 @@ class EventManager:
             job_id: The ID of the job associated with the event (if applicable).
             workstation_id: The ID of the workstation associated with the event (if applicable).
         """
+
         event = (self.event_id_counter, time, event_type, job_id, workstation_id)
         self.event_id_counter += 1
-
+        print(f"Added event: {event_type} at time t: {time}.")
         heapq.heappush(self.events, event)
+        
 
     def get_next_event(self):
         """
@@ -118,15 +134,16 @@ Workstation capacity is represented here are as a multiplier and selected from a
 
 class Workstation:
     def __init__(self, id, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed):
-        self.id = 0
-        self.location = 0
-        self.true_capacity = 0
-        self.mean_capacity = 0
-        self.cv = 0
-        self.std = 0
+        self.id = id
+        self.location = location
+        self.true_capacity = true_capacity
+        self.mean_capacity = mean_capacity
+        self.cv = cv
+        self.std = std
         self.status = "Vacant"
-        self.wip = 0
-        self.time_passed = 0
+        self.wip = wip
+        self.time_passed = time_passed
+
 
     def calculate_workstation_std(self):
         self.std = self.mean_capacity * self.cv
@@ -134,19 +151,18 @@ class Workstation:
 
 
 class Job:
-    def __init__(self, id, routing, true_process_time, mean_process_time, status, cv, std):
-        self.id = 0
-        self.location = 0
-        self.true_process_time = [0,0,0]
-        self.mean_process_time = [0,0,0]
-        self.status = "Pending"
-        self.cv = 0
-        self.std = [0,0,0]
+    def __init__(self, id, location, true_processing_time, mean_processing_time, status, cv, std):
+        self.id = id
+        self.location = location
+        self.true_processing_time = true_processing_time
+        self.mean_processing_time = mean_processing_time
+        self.status = status
+        self.cv = cv
+        self.std = std
 
     def calculate_job_std(self):
-        for i in range(len(self.true_process_time)):
-            self.std[i] = self.mean_process_time[i] * self.cv
-            self.true_process_time[i] = np.random.normal(self.mean_process_time[i], self.std[i], 1)
+        self.std = self.mean_processing_time * self.cv
+        self.true_process_time = np.random.normal(self.mean_processing_time, self.std, 1)
 
 ### Job.status = {"Pending", "WIP", "Idle", "Complete"}
 ### Workstation.status = {"Starvation", "Congestion", "Processing"}
@@ -156,7 +172,9 @@ class Job:
 
 class Event:
     def __init__(self, id, type, status):
-        self.id = 0
+        self.id = id
+        self.type = type
+        self.status = status
 
     def update_event_time(self, id, new_time):
         return 0

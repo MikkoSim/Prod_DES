@@ -29,11 +29,8 @@ Returns:
 
 def create_jobs(num_jobs, cv_options):
     for i in range(num_jobs):
-        job = Job(i, 0, 0, random.uniform(30, 30), "Pending", random.choice(cv_options), 0)
-        job.calculate_job_std()
-        job_list.add_job(job)
-        event_list.add_event(t, "job_arrival", job.id)
-        
+        event_list.add_event(t, "job_arrival", job_list.job_id_counter, 1)
+        job_list.add_job(1, 0, 1, "job_arrival", random.choice([1,1,1]), 0)
     export_jobs_to_csv(job_list, filename="jobs.csv")
 
 """
@@ -43,14 +40,10 @@ Creates single non-parallel workstations in series. Updates workstation manager 
 """
 
 
-def create_workstations(num_workstations, cv_options, workstation_manager, event_manager):
+def create_workstations(num_workstations, cv_options):
     for i in range(num_workstations):
-        new_workstation_id = production_line.workstation_id_counter
-        workstation = Workstation(i, new_workstation_id, 0, 1, random.choice(cv_options), 0, "Vacant", 0, 0)
-        workstation.calculate_workstation_std()
-        production_line.add_workstation(workstation)
-        event_list.add_event(t, "workstation_starvation", -1, new_workstation_id)
-        new_workstation_id += 1
+        event_list.add_event(t, "workstation_starvation", -1, production_line.workstation_id_counter)
+        production_line.add_workstation((i+1), 0, 1, random.choice([1,1,1]), 0, "Vacant", 0, 0)
     return 1
 
 
@@ -77,34 +70,57 @@ def export_jobs_to_csv(job_manager, filename="jobs.csv"):
 
 
 def run_simulation():
-
+    num_of_workstations = 3
+    num_of_jobs = 1
+    print(f"Creating default settings, {num_of_jobs} job(s) and {num_of_workstations} workstation(s).")
     load_test_settings()
+    print("SIMULATION STARTS.")
+
+    #print("Test printing JobManager:")
+    #print(job_list.jobs)
+    #print("Test printing WorkstationManager:")
+    #print(production_line.workstations)
+
+    #print("Print all workstations:")
+    #print(f"ID: {production_line.workstations[1].id}, location: {production_line.workstations[1].location}")
+    #print(f"ID: {production_line.workstations[2].id}, location: {production_line.workstations[2].location}")
+    #print(f"ID: {production_line.workstations[3].id}, location: {production_line.workstations[3].location}")
 
     heapq.heapify(event_list.events) # list converted into heap
     
     while event := event_list.get_next_event():
-        t = event[0] # update simulation time
-        event_type = event[1]
-        job_id = event[2]
-        workstation_id = event[3]
+        event_id = event[0]
+        t = event[1]                    ### SIMULATION TIME UPDATED
+        event_type = event[2]
+        job_id = event[3]
+        workstation_id = event[4]
+        #print(f"Next event: event_id: {event_id}, t: {t}, event_type: {event_type}, job_id: {job_id}, workstation_id: {workstation_id}")
 
         if event_type == "job_arrival":
-            handle_job_arrival(job_id, production_line, event_list)
-        elif event_type == "job_completion":
-            handle_job_completion(job_id,workstation_id, job_list, production_line, event_list)
+            print(f"Handling jog arrival: job {job_id} at workstation {workstation_id}")
+            handle_job_arrival(job_id, workstation_id)
         elif event_type == "job_waiting":
-            handle_job_waiting(job_id, workstation_id, job_list, production_line, event_list)
+            print(f"Handling jog waiting: job {job_id} at workstation {workstation_id}")
+            handle_job_waiting(job_id, workstation_id)
+        elif event_type == "job_phase_ready":
+            print(f"Handling jog phase ready: job {job_id} at workstation {workstation_id}")
+            handle_job_phase_ready(job_id, workstation_id)
+        elif event_type == "job_completion":
+            print(f"Handling jog completion: job {job_id} at workstation {workstation_id}")
+            handle_job_completion(job_id, workstation_id)
         elif event_type == "job_processing":
-            handle_job_processing()
+            print(f"Handling jog processing: job {job_id} at workstation {workstation_id}")
+            handle_job_processing(job_id, workstation_id)
         elif event_type == "workstation_ready":
             handle_workstation_ready()
         elif event_type == "workstation_starvation":
             handle_workstation_starvation()
         elif event_type == "workstation_congestion":
             handle_workstation_congestion()
+    print("SIMULATION ENDS.")
 
 
-"""
+"""                                             (SEND)      (RECEIVE)
 ARRIVE  =>  PROCESS          =>          PHASE_READY     =>     ARRIVE
     =>  WAITING                             =>      COMPLETION
           =>  PROCESS         
@@ -133,36 +149,29 @@ If workstation > 0, then routing is incremented.
 """
 
 def handle_job_arrival(job_id, workstation_id):
-    job = job_list.get_job(job_id)
-    workstation = production_line.get_workstation(workstation_id)
     requested_routing = job_list.get_job_routing(job_id)
-    if workstation_is_found(requested_routing):
-
-        processing_time = calculate_processing_time(job, workstation)
-
-        event_list.add_event(t, "job_processing", job_id = job.id, workstation_id = workstation.id)
-
+    print(f"Job {job_id} is looking workstation from step {requested_routing}...")
+    if production_line.search_vacant_workstation_in_routing(requested_routing):
+        print(f"Job {job_id} found a workstation  {requested_routing}!")
+        event_list.add_event(t, "job_processing", job_id, workstation_id)
     else:
-        event_list.add_event(t, "job_waiting", job_id = job.id, workstation_id = workstation.id)
+        print(f"Job {job_id} did not find vacant workstation.")
+        event_list.add_event(t, "job_waiting", job_id, workstation_id)
 
 
 """
 Schedule next open workstation in next routing.
+Must calculate what workstation will be available first, then allocate job there.
 
 """
 
 
-def handle_job_waiting(job_id, workstation_id, job_manager, workstation_manager, event_manager):
+def handle_job_waiting(job_id, workstation_id):
     job = job_list.get_job(job_id)
-    previous_routing_phase = job_list.get_job_routing(job_id)
+    previous_routing_phase = job.location
     next_routing_phase = previous_routing_phase + 1
-    if workstation_is_available_in_routing(next_routing_phase):
-        return 1
-        # move job to the next vacant workstation
-        # schedule next "job_arrival" event
-    else:
-        return 1
-        # should we start recoring waiting time???
+    waiting_time = time_for_vacancy(next_routing_phase)
+    event_list.add_event(t + waiting_time, "job_processing", job_id, workstation_id)
 
 """
 Check if routing is available.
@@ -186,6 +195,12 @@ If workstation == routing length
 def handle_job_phase_ready(job_id, workstation_id):
     job = job_list.get_job(job_id)
     workstation = production_line.get_workstation(workstation_id)
+    if job_has_more_steps_in_routing():
+        target_location = current_location + 1
+        # Set target location, incremented
+        # Check if target workstation has vacancy
+        if production_line.search_vacant_workstation_in_routing()
+    else:
 
 
 
@@ -216,14 +231,11 @@ Calculate processing time.
 
 
 def handle_job_processing(job_id, workstation_id):
-    job = job_list.get_job(job_id)
-    workstation = production_line.get_workstation(workstation_id)
-    requested_routing = job_list.get_job_routing(job_id)
+    #job = job_list.get_job(job_id)
+    #workstation = production_line.get_workstation(workstation_id)
 
-    processing_time = calculate_processing_time(job, workstation)
-    event_list.add_event(t + processing_time, "job_phase_ready", job_id = job.id, workstation_id = workstation.id)
-
-    return 1
+    processing_time = calculate_processing_time(job_id, workstation_id)
+    event_list.add_event(t + processing_time, "job_phase_ready", job_id, workstation_id)
 
 
 
@@ -252,30 +264,8 @@ def handle_workstation_congestion():
 ### Load 3 jobs, in a simple 1-1-1 prod.line.
 
 def load_test_settings():
-    """
-    w1 = Workstation(1, 1, 0, 20, 1, 0, "Starvation", 0, 0)
-    production_line.add_workstation(w1)
-    w2 = Workstation(2, 2, 0, 20, 1, 0, "Starvation", 0, 0)
-    production_line.add_workstation(w2)
-    w3 = Workstation(3, 3, 0, 20, 1, 0, "Starvation", 0, 0)
-    production_line.add_workstation(w3)
-
-    j1 = Job(1, 0, 0, 20, "Pending", 1, 0)
-    job_list.add_job(j1)
-    j2 = Job(1, 0, 0, 20, "Pending", 1, 0)
-    job_list.add_job(j2)
-    j3 = Job(1, 0, 0, 20, "Pending", 1, 0)
-    job_list.add_job(j3)
-
-    event_list.add_event(1, "job_arrived")
-    event_list.add_event(2, "job_arrived")
-    event_list.add_event(3, "job_arrived")
-    event_list.add_event(4, "workstation_congestion")
-    event_list.add_event(5, "workstation_congestion")
-    event_list.add_event(6, "workstation_congestion")
-    """
-    create_workstations
-    create_jobs(10, (0.66, 1, 1.33), production_line, event_list)
+    create_workstations(3, [1, 1, 1])
+    create_jobs(1, [1, 1, 1])
     return 0
 
 
@@ -284,10 +274,15 @@ def all_jobs_completed():
     return 1
 
 
+### def search_vacant_workstation_in_routing(self, location):
+###     for workstation in self.workstations.values():
+###         if workstation.location == location and workstation.status == 'Vacant':
+###             return True
+###     return False
 
-
-def workstation_is_available_in_routing():
-    return 1
+def time_for_vacancy(routing_phase):
+    
+    return 0
 
 
 
@@ -304,13 +299,9 @@ def calculate_processing_time(job_id, workstation_id):
     """
     Job mean and true process times are vectors with same dimension as routing vector.
     """
+    print(f"Calculating process time for job: {job_id} at workstation: {workstation_id}")
     job = job_list.get_job(job_id)
-    current_routing = job.routing
+    current_routing = job.location
     workstation = production_line.get_workstation(workstation_id)
-    true_processing_time = job.true_processing_time[current_routing] * workstation.true_capacity
+    true_processing_time = job.true_processing_time * workstation.true_capacity
     return true_processing_time
-
-def workstation_is_found():
-
-
-    return 1
