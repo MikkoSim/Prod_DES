@@ -195,12 +195,12 @@ def handle_job_phase_ready(job_id, workstation_id):
     job = job_list.get_job(job_id)
     workstation = production_line.get_workstation(workstation_id)
     if job_has_more_steps_in_routing(job_id):
-        change_job_location(job_id, workstation_id, job.location, job.location + 1)        # Set target location, incremented
+        new_workstation_id = change_job_location(job_id, workstation_id, job.location, job.location + 1)        # Set target location, incremented
 
         if production_line.search_vacant_workstation_in_routing(job.location):        # Check if target workstation has vacancy
-            event_list.add_event(t, "job_arrival", job_id, workstation_id)
+            event_list.add_event(t, "job_arrival", job_id, new_workstation_id)
         else:
-            event_list.add_event(t, "job_waiting", job_id, workstation_id)
+            event_list.add_event(t, "job_waiting", job_id, new_workstation_id)
     else:
         event_list.add_event(t, "job_completion", job_id, workstation_id)
 
@@ -284,3 +284,4 @@ def change_job_location(job_id, workstation_id, location_old, location_new):
     job = job_list.get_job(job_id)
     workstation = production_line.get_workstation(workstation_id)
     job.location = location_new
+    return location_new
