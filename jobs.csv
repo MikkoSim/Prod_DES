@@ -1,2 +1,2 @@
-true_processing_time,status,cv,std,true_process_time,location,mean_processing_time,id
-0,job_arrival,1,1,[1.29918724],1,1,1
+status,mean_processing_time,std,true_processing_time,cv,id,location
+job_arrival,1,1,[0.14091301],1,1,1

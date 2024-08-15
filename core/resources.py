@@ -95,7 +95,6 @@ class EventManager:
 
         event = (self.event_id_counter, time, event_type, job_id, workstation_id)
         self.event_id_counter += 1
-        print(f"Added event: {event_type} at time t: {time}.")
         heapq.heappush(self.events, event)
         
 
@@ -147,7 +146,7 @@ class Workstation:
 
     def calculate_workstation_std(self):
         self.std = self.mean_capacity * self.cv
-        self.true_capacity = np.random.normal(self.mean_capacity, self.std, 1)
+        self.true_capacity = abs(np.random.normal(self.mean_capacity, self.std, 1))
 
 
 class Job:
@@ -162,7 +161,7 @@ class Job:
 
     def calculate_job_std(self):
         self.std = self.mean_processing_time * self.cv
-        self.true_process_time = np.random.normal(self.mean_processing_time, self.std, 1)
+        self.true_processing_time = abs(np.random.normal(self.mean_processing_time, self.std, 1))
 
 ### Job.status = {"Pending", "WIP", "Idle", "Complete"}
 ### Workstation.status = {"Starvation", "Congestion", "Processing"}

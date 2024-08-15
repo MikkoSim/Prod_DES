@@ -11,7 +11,7 @@ import random
 from core.resources import *
 
 
-t = 0
+t = 0.0
 dt = 0.001
 production_line = WorkstationManager()
 job_list = JobManager()
@@ -70,6 +70,7 @@ def export_jobs_to_csv(job_manager, filename="jobs.csv"):
 
 
 def run_simulation():
+    global t
     num_of_workstations = 3
     num_of_jobs = 1
     print(f"Creating default settings, {num_of_jobs} job(s) and {num_of_workstations} workstation(s).")
@@ -97,19 +98,19 @@ def run_simulation():
         #print(f"Next event: event_id: {event_id}, t: {t}, event_type: {event_type}, job_id: {job_id}, workstation_id: {workstation_id}")
 
         if event_type == "job_arrival":
-            print(f"Handling jog arrival: job {job_id} at workstation {workstation_id}")
+            print(f"TIME: {t}, Handling jog arrival: job {job_id} at workstation {workstation_id}")
             handle_job_arrival(job_id, workstation_id)
         elif event_type == "job_waiting":
-            print(f"Handling jog waiting: job {job_id} at workstation {workstation_id}")
+            print(f"TIME: {t}, Handling jog waiting: job {job_id} at workstation {workstation_id}")
             handle_job_waiting(job_id, workstation_id)
         elif event_type == "job_phase_ready":
-            print(f"Handling jog phase ready: job {job_id} at workstation {workstation_id}")
+            print(f"TIME: {t}, Handling jog phase ready: job {job_id} at workstation {workstation_id}")
             handle_job_phase_ready(job_id, workstation_id)
         elif event_type == "job_completion":
-            print(f"Handling jog completion: job {job_id} at workstation {workstation_id}")
+            print(f"TIME: {t}, Handling jog completion: job {job_id} at workstation {workstation_id}")
             handle_job_completion(job_id, workstation_id)
         elif event_type == "job_processing":
-            print(f"Handling jog processing: job {job_id} at workstation {workstation_id}")
+            print(f"TIME: {t}, Handling jog processing: job {job_id} at workstation {workstation_id}")
             handle_job_processing(job_id, workstation_id)
         elif event_type == "workstation_ready":
             handle_workstation_ready()
@@ -125,8 +126,6 @@ ARRIVE  =>  PROCESS          =>          PHASE_READY     =>     ARRIVE
     =>  WAITING                             =>      COMPLETION
           =>  PROCESS         
 """
-
-
 
 
 """
@@ -145,17 +144,16 @@ If workstation > 0, then routing is incremented.
     If vacant workstation is NOT found
         => Create job_waiting event
      
-
 """
 
 def handle_job_arrival(job_id, workstation_id):
     requested_routing = job_list.get_job_routing(job_id)
-    print(f"Job {job_id} is looking workstation from step {requested_routing}...")
+    #print(f"Job {job_id} is looking workstation from step {requested_routing}...")
     if production_line.search_vacant_workstation_in_routing(requested_routing):
-        print(f"Job {job_id} found a workstation  {requested_routing}!")
+        #print(f"Job {job_id} found a workstation  {requested_routing}!")
         event_list.add_event(t, "job_processing", job_id, workstation_id)
     else:
-        print(f"Job {job_id} did not find vacant workstation.")
+        #print(f"Job {job_id} did not find vacant workstation.")
         event_list.add_event(t, "job_waiting", job_id, workstation_id)
 
 
@@ -172,6 +170,7 @@ def handle_job_waiting(job_id, workstation_id):
     next_routing_phase = previous_routing_phase + 1
     waiting_time = time_for_vacancy(next_routing_phase)
     event_list.add_event(t + waiting_time, "job_processing", job_id, workstation_id)
+
 
 """
 Check if routing is available.
@@ -195,13 +194,15 @@ If workstation == routing length
 def handle_job_phase_ready(job_id, workstation_id):
     job = job_list.get_job(job_id)
     workstation = production_line.get_workstation(workstation_id)
-    if job_has_more_steps_in_routing():
-        target_location = current_location + 1
-        # Set target location, incremented
-        # Check if target workstation has vacancy
-        if production_line.search_vacant_workstation_in_routing()
-    else:
+    if job_has_more_steps_in_routing(job_id):
+        change_job_location(job_id, workstation_id, job.location, job.location + 1)        # Set target location, incremented
 
+        if production_line.search_vacant_workstation_in_routing(job.location):        # Check if target workstation has vacancy
+            event_list.add_event(t, "job_arrival", job_id, workstation_id)
+        else:
+            event_list.add_event(t, "job_waiting", job_id, workstation_id)
+    else:
+        event_list.add_event(t, "job_completion", job_id, workstation_id)
 
 
 """
@@ -214,13 +215,7 @@ def handle_job_completion(job_id, workstation_id):
     job = job_list.get_job(job_id)
     workstation = production_line.get_workstation(workstation_id)
 
-    if job_has_more_steps_in_routing:
-        return 1
-        # move job to the next vacant workstation
-        # schedule next "job_arrival" event
-    else:
-        return 1
-        # job is completed, remove from system
+    return 1
 
 
 """
@@ -231,12 +226,8 @@ Calculate processing time.
 
 
 def handle_job_processing(job_id, workstation_id):
-    #job = job_list.get_job(job_id)
-    #workstation = production_line.get_workstation(workstation_id)
-
     processing_time = calculate_processing_time(job_id, workstation_id)
     event_list.add_event(t + processing_time, "job_phase_ready", job_id, workstation_id)
-
 
 
 def handle_workstation_ready():
@@ -244,11 +235,9 @@ def handle_workstation_ready():
     return 1
 
 
-
 def handle_workstation_starvation():
 
     return 1
-
 
 
 def handle_workstation_congestion():
@@ -256,42 +245,26 @@ def handle_workstation_congestion():
     return 1
 
 
-
-
-
-
-
-### Load 3 jobs, in a simple 1-1-1 prod.line.
-
-def load_test_settings():
+def load_test_settings():   ### Load 3 jobs, in a simple 1-1-1 prod.line.
     create_workstations(3, [1, 1, 1])
     create_jobs(1, [1, 1, 1])
     return 0
-
 
 
 def all_jobs_completed():
     return 1
 
 
-### def search_vacant_workstation_in_routing(self, location):
-###     for workstation in self.workstations.values():
-###         if workstation.location == location and workstation.status == 'Vacant':
-###             return True
-###     return False
-
 def time_for_vacancy(routing_phase):
     
     return 0
 
 
-
-def job_has_more_steps_in_routing(job_id, ):
-    ### If a routing is expressed as a vector, a routing has finished if its routing phase is 1 > len(vector)
-    job_id = job_list.get_job(job_id)
-    if job_list.get_job_routing(job_id) < (len(prod_line) + 1):
+def job_has_more_steps_in_routing(job_id):
+    if job_list.get_job_routing(job_id) < len(prod_line):
         return True
     else:
+        print(f"Job does NOT have anymore steps...")
         return False
 
 
@@ -299,9 +272,15 @@ def calculate_processing_time(job_id, workstation_id):
     """
     Job mean and true process times are vectors with same dimension as routing vector.
     """
-    print(f"Calculating process time for job: {job_id} at workstation: {workstation_id}")
     job = job_list.get_job(job_id)
     current_routing = job.location
     workstation = production_line.get_workstation(workstation_id)
     true_processing_time = job.true_processing_time * workstation.true_capacity
+    #print(f"Process will take: {true_processing_time} time. Job: {job.true_processing_time} WS: {workstation.true_capacity}")
     return true_processing_time
+
+
+def change_job_location(job_id, workstation_id, location_old, location_new):
+    job = job_list.get_job(job_id)
+    workstation = production_line.get_workstation(workstation_id)
+    job.location = location_new

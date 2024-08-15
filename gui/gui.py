@@ -16,7 +16,8 @@ class GUI:
         self.label = tk.Label(master, text="Toimii!")
         self.label.pack()
 
-        self.jobs_button = tk.Button(master, text="Generate job list", command=self.handle_jobs_button)
+        self.jobs_button = tk.Button(master, text="Generate job list", command=self.handle_jobs_button, )
+        self.jobs_button.config(state=tk.DISABLED)
         self.jobs_button.pack()
 
         self.simulation_window_button = tk.Button(master, text="Simulate", command=self.handle_simulation)
