@@ -1,8 +1,3 @@
-###
-###
-### Entry point, orchestrates GUI and simulation
-###
-###
 
 import tkinter as tk
 from gui.gui import GUI
