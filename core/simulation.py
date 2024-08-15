@@ -31,7 +31,7 @@ def create_jobs(num_jobs, cv_options):
     for i in range(num_jobs):
         event_list.add_event(t, "job_arrival", job_list.job_id_counter, 1)
         job_list.add_job(1, 0, 1, "job_arrival", random.choice([1,1,1]), 0)
-    export_jobs_to_csv(job_list, filename="jobs.csv")
+    #export_jobs_to_csv(job_list, filename="jobs.csv")                      ### Export jobs to CSV-file
 
 """
 Creates single non-parallel workstations in series. Updates workstation manager with new workstations and creates events for empty workstations.
