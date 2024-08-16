@@ -116,31 +116,43 @@ class EventManager:
     
     def remove_event(self, id):
         return 0
-    
+
+
 class SourceManager:
     def __init__(self):
-        self.sources = []
+        self.sources = {}
         self.source_id_counter = 0
 
-    def add_source(self, id, source_type, source_parameters):
-        return 1
+    def add_source(self, source_type, target_object, num_of_elements, distr_func, mean, sigma):
+        source = Source(self.source_id_counter, source_type, target_object, num_of_elements, distr_func, mean, sigma)
+        self.sources[self.source_id_counter] = source
+        self.source_id_counter += 1
 
+
+"""
+SERVER OBJECTS
+
+"""
+
+class Server:
+    def __init__(self, id):
+        self.id = id
 
 """
 Workstation capacity is represented here are as a multiplier and selected from a probability distribution function.
 
 """
 
-class Workstation:
-    def __init__(self, id, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed):
+class Workstation(Server):
+    def __init__(self, id = -1, location = -1, true_capacity = 0, mean_capacity = 0, cv = 0, std = 0, status = "Vacant", job = None, time_passed = 0):
         self.id = id
         self.location = location
         self.true_capacity = true_capacity
         self.mean_capacity = mean_capacity
         self.cv = cv
         self.std = std
-        self.status = "Vacant"
-        self.wip = wip
+        self.status = status
+        self.job = job
         self.time_passed = time_passed
 
 
@@ -149,7 +161,36 @@ class Workstation:
         self.true_capacity = abs(np.random.normal(self.mean_capacity, self.std, 1))
 
 
-class Job:
+class Source(Server):
+    def __init__(self, id, source_type, target_object, num_of_elements, distr_func, mean, sigma):
+        self.id = id
+        self.source_type = source_type
+        self.target_object = target_object
+        self.num_of_elements = num_of_elements
+        self.distr_func = distr_func
+        self.mean = mean
+        self.sigma = sigma
+
+    def generate_entity(self):
+        if self.source_type == "job":
+            job = 1
+            return job
+        elif self.source_type == "material":
+            material = 1
+            return material
+
+
+"""
+ENTITY OBJECTS
+
+"""
+
+class Entity:
+    def __init__(self, id):
+        self.id = id
+
+
+class Job(Entity):
     def __init__(self, id, location, true_processing_time, mean_processing_time, status, cv, std):
         self.id = id
         self.location = location
@@ -163,8 +204,17 @@ class Job:
         self.std = self.mean_processing_time * self.cv
         self.true_processing_time = abs(np.random.normal(self.mean_processing_time, self.std, 1))
 
+
+class Worker(Entity):
+    def __init__(self, id):
+        self.id = id
+
+class Material(Entity):
+    def __init__(self, id):
+        self.id = id
+
 ### Job.status = {"Pending", "WIP", "Idle", "Complete"}
-### Workstation.status = {"Starvation", "Congestion", "Processing"}
+### Workstation.status = {"Vacant", "Received", "Processing", "Complete"}
 ### Event.status = {"job_arrived", "job_processing", "job_waiting", 
 ###                 "job_phase_ready", "job_completed", "workstation_ready", 
 ###                 "workstation_starvation", "workstation_congestion"}
@@ -181,17 +231,3 @@ class Event:
     def update_event_type(self, id, new_type):
         return 0
     
-
-class Source:
-    def __init__(self, id, source_type, generation_parameters):
-        self.id = id
-        self.source_type = source_type
-        self.generation_parameters = generation_parameters
-
-    def generate_entity(self):
-        if self.source_type == "job":
-            job = 1
-            return job
-        elif self.source_type == "material":
-            material = 1
-            return material
