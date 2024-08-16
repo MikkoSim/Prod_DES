@@ -29,7 +29,7 @@ Returns:
 
 def create_jobs(num_jobs, cv_options):
     for i in range(num_jobs):
-        event_dict.add_event(t, "job_created", job_dict.job_id_counter, 1)
+        event_dict.add_event(t, "job_created", job_dict.job_id_counter, 0)
         job_dict.add_job(0, 0, 1, "job_created", random.choice([1,1,1]), 0)
     #export_jobs_to_csv(job_dict, filename="jobs.csv")                      ### Export jobs to CSV-file
 
@@ -121,14 +121,15 @@ def run_simulation():
         event_type = event[2]
         job_id = event[3]
         workstation_id = event[4]
+        workstation = workstation_dict.get_workstation(workstation_id)
         #print(f"Next event: event_id: {event_id}, t: {t}, event_type: {event_type}, job_id: {job_id}, workstation_id: {workstation_id}")
 
 
         if event_type == "job_created":
-            print(f"TIME: {t}, Handling jog creation: job {job_id} at source {workstation_id}")
+            print(f"TIME: {t}, Handling jog creation: job {job_id} at source.")
             handle_job_created(job_id, workstation_id)
         elif event_type == "job_arrival":
-            print(f"TIME: {t}, Handling jog arrival: job {job_id} at workstation {workstation_id}")
+            print(f"TIME: {t}, Handling jog arrival: job {job_id} at workstation {workstation_id}, location {workstation.location}")
             handle_job_arrival(job_id, workstation_id)
         elif event_type == "job_waiting":
             print(f"TIME: {t}, Handling jog waiting: job {job_id} at workstation {workstation_id}")
@@ -148,27 +149,29 @@ def run_simulation():
             handle_workstation_starvation()
         elif event_type == "workstation_congestion":
             handle_workstation_congestion()
+    print(f"Total simulation time: {t} of some units.")
     print("SIMULATION ENDS.")
     t = 0
     ### Save list to excel?
 
 
-"""                                             (SEND)      (RECEIVE)
-GEN    =>    ARRIVE  =>  PROCESS          =>          PHASE_READY     =>     ARRIVE
- WAIT           =>  WAITING                                =>   COMPLETION
-   PROCESS            =>  PROCESS         
+"""  (SEND)  (RECEIVE)                                             (SEND)     (RECEIVE)
+    GEN    =>    ARRIVE  =>  PROCESS          =>          PHASE_READY     =>     ARRIVE
+     WAIT           =>  WAITING                                =>   COMPLETION
+       PROCESS            =>  PROCESS         
 """
 
 
 def handle_job_created(job_id, workstation_id):
+    requested_location = 1
+    new_workstation_id = 1
     job = job_dict.get_job(job_id)
-    workstation = workstation_dict.get_workstation(workstation_id)
-    requested_routing = job.location + 1
-    if workstation_dict.search_vacant_workstation_in_routing(requested_routing):
+    workstation = workstation_dict.get_workstation(new_workstation_id)
+    if workstation_dict.search_vacant_workstation_in_routing(requested_location):
         #print(f"Job {job_id} found a workstation  {requested_routing}!")
-        allocate_job_to_workstation(job_id, workstation_id, requested_routing)
-        event_dict.add_event(t, "job_arrival", job_id, workstation_id)
-        workstation.status = "Received"
+        allocate_job_to_workstation(job_id, new_workstation_id, requested_location)
+        #workstation.status = "Received"
+        event_dict.add_event(t, "job_arrival", job_id, new_workstation_id)
     else:
         #print(f"Job {job_id} did not find vacant workstation.")
         event_dict.add_event(t, "job_waiting", job_id, workstation_id)
@@ -192,15 +195,15 @@ If workstation > 0, then routing is incremented.
 """
 
 def handle_job_arrival(job_id, workstation_id):
-    requested_routing = job_dict.get_job_routing(job_id)
+    job = job_dict.get_job(job_id)
     workstation = workstation_dict.get_workstation(workstation_id)
     #print(f"Job {job_id} is looking workstation from step {requested_routing}...")
-    if workstation_dict.search_vacant_workstation_in_routing(requested_routing):
-        #print(f"Job {job_id} found a workstation  {requested_routing}!")
+    if workstation_dict.search_vacant_workstation_in_routing(job.location):
+        print(f"Job {job_id} found a workstation from location {job.location}!")
         event_dict.add_event(t, "job_processing", job_id, workstation_id)
         workstation.status = "Processing"
     else:
-        #print(f"Job {job_id} did not find vacant workstation.")
+        print(f"Job {job_id} did not find vacant workstation from location {job.location}.")
         event_dict.add_event(t, "job_waiting", job_id, workstation_id)
 
 
@@ -242,17 +245,20 @@ If workstation == routing length
 def handle_job_phase_ready(job_id, workstation_id):
     job = job_dict.get_job(job_id)
     workstation = workstation_dict.get_workstation(workstation_id)
+    new_workstation_id = workstation_id + 1
+    new_job_location = job.location + 1
     if job_has_more_steps_in_routing(job_id):
-        new_workstation_id = allocate_job_to_workstation(job_id, workstation_id, job.location + 1)        # Set target location, incremented
-        new_workstation = workstation_dict.get_workstation(new_workstation_id)
-        workstation.status = "Vacant"
-        if workstation_dict.search_vacant_workstation_in_routing(job.location):        # Check if target workstation has vacancy
+        if workstation_dict.search_vacant_workstation_in_routing(new_job_location):        # Check if target workstation has vacancy
+            allocate_job_to_workstation(job_id, new_workstation_id, new_job_location)        # Set target location, incremented
+            new_workstation = workstation_dict.get_workstation(new_workstation_id)
+            workstation.status = "Vacant"
             event_dict.add_event(t, "job_arrival", job_id, new_workstation_id)
-            new_workstation.status = "Received"
+            #new_workstation.status = "Received"
         else:
             event_dict.add_event(t, "job_waiting", job_id, new_workstation_id)
     else:
         event_dict.add_event(t, "job_completion", job_id, workstation_id)
+        workstation.status = "Vacant"
 
 
 """
@@ -302,10 +308,6 @@ def load_test_settings():   ### Load 3 jobs, in a simple 1-1-1 prod.line.
     return 0
 
 
-def all_jobs_completed():
-    return 1
-
-
 def time_for_vacancy(routing_phase):
     
     return 0
@@ -331,10 +333,10 @@ def calculate_processing_time(job_id, workstation_id):
     return true_processing_time
 
 
-def allocate_job_to_workstation(job_id, workstation_id, location_new):
+def allocate_job_to_workstation(job_id, new_workstation_id, location_new):
     job = job_dict.get_job(job_id)
-    workstation = workstation_dict.get_workstation(workstation_id)
+    workstation = workstation_dict.get_workstation(new_workstation_id)
     job.location = location_new
     workstation.job = job
-    print(f"Workstation {workstation_id} has a new job: {workstation.job}")
+    print(f"Workstation {new_workstation_id} at location {workstation.location} has a new job: {workstation.job.id}")
     return location_new

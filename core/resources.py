@@ -25,6 +25,8 @@ class WorkstationManager:
         self.workstation_id_counter += 1
 
     def get_workstation(self, id):
+        if id == 0:
+            return None
         workstation = self.workstations.get(id)
         if workstation:
             return workstation
@@ -42,7 +44,7 @@ class WorkstationManager:
     
     def search_vacant_workstation_in_routing(self, location):
         for workstation in self.workstations.values():
-            if workstation.location == location and workstation.status == 'Vacant':
+            if workstation.location == location and workstation.status == "Vacant":
                 return True
         return False
 
@@ -161,25 +163,6 @@ class Workstation(Server):
         self.true_capacity = abs(np.random.normal(self.mean_capacity, self.std, 1))
 
 
-class Source(Server):
-    def __init__(self, id, source_type, target_object, num_of_elements, distr_func, mean, sigma):
-        self.id = id
-        self.source_type = source_type
-        self.target_object = target_object
-        self.num_of_elements = num_of_elements
-        self.distr_func = distr_func
-        self.mean = mean
-        self.sigma = sigma
-
-    def generate_entity(self):
-        if self.source_type == "job":
-            job = 1
-            return job
-        elif self.source_type == "material":
-            material = 1
-            return material
-
-
 """
 ENTITY OBJECTS
 
@@ -219,6 +202,12 @@ class Material(Entity):
 ###                 "job_phase_ready", "job_completed", "workstation_ready", 
 ###                 "workstation_starvation", "workstation_congestion"}
 
+"""
+ENVIRONMENT OBJECTS
+
+"""
+
+
 class Event:
     def __init__(self, id, type, status):
         self.id = id
@@ -231,3 +220,21 @@ class Event:
     def update_event_type(self, id, new_type):
         return 0
     
+
+class Source:
+    def __init__(self, id, source_type, target_object, num_of_elements, distr_func, mean, sigma):
+        self.id = id
+        self.source_type = source_type
+        self.target_object = target_object
+        self.num_of_elements = num_of_elements
+        self.distr_func = distr_func
+        self.mean = mean
+        self.sigma = sigma
+
+    def generate_entity(self):
+        if self.source_type == "job":
+            job = 1
+            return job
+        elif self.source_type == "material":
+            material = 1
+            return material
