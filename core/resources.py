@@ -18,8 +18,8 @@ class WorkstationManager:
         self.workstations = {}
         self.workstation_id_counter = 1
 
-    def add_workstation(self, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed):
-        workstation = Workstation(self.workstation_id_counter, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed)
+    def add_workstation(self, location, true_capacity, mean_capacity, cv, std, status, wip, time_when_freed):
+        workstation = Workstation(self.workstation_id_counter, location, true_capacity, mean_capacity, cv, std, status, wip, time_when_freed)
         workstation.calculate_workstation_std()
         self.workstations[self.workstation_id_counter] = workstation
         self.workstation_id_counter += 1
@@ -83,6 +83,7 @@ class EventManager:
     def __init__(self):
         self.events = [] # converted into heap later...
         self.event_id_counter = 1
+        self.event_log = []
     
     def add_event(self, time, event_type, job_id=None, workstation_id=None):
         """
@@ -109,7 +110,9 @@ class EventManager:
             or None if the queue is empty
         """
         if self.events:
-            return heapq.heappop(self.events)
+            event = heapq.heappop(self.events)
+            self.event_log.append(event)
+            return event
         else:
             return None
 
@@ -146,7 +149,7 @@ Workstation capacity is represented here are as a multiplier and selected from a
 """
 
 class Workstation(Server):
-    def __init__(self, id = -1, location = -1, true_capacity = 0, mean_capacity = 0, cv = 0, std = 0, status = "Vacant", job = None, time_passed = 0):
+    def __init__(self, id = -1, location = -1, true_capacity = 0, mean_capacity = 0, cv = 0, std = 0, status = "Vacant", job = None, time_when_freed = 0):
         self.id = id
         self.location = location
         self.true_capacity = true_capacity
@@ -155,7 +158,7 @@ class Workstation(Server):
         self.std = std
         self.status = status
         self.job = job
-        self.time_passed = time_passed
+        self.time_when_freed = time_when_freed
 
 
     def calculate_workstation_std(self):
@@ -206,6 +209,17 @@ class Material(Entity):
 ENVIRONMENT OBJECTS
 
 """
+
+class RoutingNodeManager:
+    def __init__(self):
+        self.stages = {}
+        self.head_node = None
+
+
+class RoutingNode:
+    def __init__(self, workstations, next_node=None):
+        self.workstations = workstations
+        self.next_node = next_node
 
 
 class Event:

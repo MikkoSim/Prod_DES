@@ -6,8 +6,8 @@
 ###
 
 import numpy as np
-import csv
 import random
+from utils.utils import *
 from core.resources import *
 
 
@@ -34,16 +34,28 @@ def create_jobs(num_jobs, cv_options):
     #export_jobs_to_csv(job_dict, filename="jobs.csv")                      ### Export jobs to CSV-file
 
 """
-Creates single non-parallel workstations in series. Updates workstation manager with new workstations and creates events for empty workstations.
+Creates a workstations network based on input vector. Updates workstation manager with new workstations and creates events for empty workstations.
 
 
 """
 
 
-def create_workstations(num_workstations, list_of_mean_times, cv_options):
-    for i in range(num_workstations):
-        event_dict.add_event(t, "workstation_starvation", -1, workstation_dict.workstation_id_counter)
-        workstation_dict.add_workstation((i+1), 0, list_of_mean_times[i], random.choice(cv_options), 0, "Vacant", 0, 0)
+def create_workstations(workstation_vector, list_of_mean_times, cv_options):
+    vector_index = 0
+    for i in workstation_vector:
+        vector_index += 1
+        for j in range(i):
+            event_dict.add_event(t, "workstation_starvation", -1, workstation_dict.workstation_id_counter)
+            workstation_dict.add_workstation((vector_index), 0, list_of_mean_times[i], random.choice(cv_options), 0, "Vacant", 0, 0)
+            print(f"Created a workstation with a location {vector_index}.")
+
+
+    #for i in workstation_vector:
+    #    #print(f"Created a workstation with a location {workstation_vector[i]}.")
+    #    print(f"Created a workstation with a location {i}.")
+    #    for j in range(i):
+    #        print("X")
+    
     return 1
 
 """
@@ -74,25 +86,28 @@ def create_source(source_type, target_object, num_of_elements, distr_func, mean,
 
 
 """
-Exports all jobs from the JobManager to a CSV file.
+Workstation are linked logically with nodes representing each phase of routing. Nodes are linked lists with a pointer pointing to a next routing phase.
 
-Args:
-    job_manager: The JobManager object containing the jobs.
-    filename: The name of the CSV file (default: "jobs.csv").
 """
 
-def export_jobs_to_csv(job_manager, filename="jobs.csv"):
 
-    jobs = list(job_manager.jobs.values())  # Get all Job objects from the JobManager
+def create_routing():
 
-    with open(filename, "w", newline="") as csvfile:
-        # Get all unique keys from all job dictionaries
-        fieldnames = set().union(*(job.__dict__.keys() for job in jobs)) 
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    return 1
 
-        writer.writeheader()
-        for job in jobs:
-            writer.writerow(job.__dict__)  # Write each job's attributes as a row
+
+"""
+Just some workstations and jobs to get things started...
+
+"""
+
+
+def load_test_settings():
+    create_workstations([1, 2, 1], [10, 25, 15], [0.01, 0.01, 0.01])
+    create_jobs(1, [1, 1, 1])
+    create_source("Job", workstation_dict.workstations[1], 0, "None", 0, 0)
+    create_routing()
+    return 0
 
 
 def run_simulation():
@@ -103,16 +118,6 @@ def run_simulation():
     load_test_settings()
     print("SIMULATION STARTS.")
 
-    #print("Test printing JobManager:")
-    #print(job_dict.jobs)
-    #print("Test printing WorkstationManager:")
-    #print(workstation_dict.workstations)
-
-    #print("Print all workstations:")
-    #print(f"ID: {workstation_dict.workstations[1].id}, location: {workstation_dict.workstations[1].location}")
-    #print(f"ID: {workstation_dict.workstations[2].id}, location: {workstation_dict.workstations[2].location}")
-    #print(f"ID: {workstation_dict.workstations[3].id}, location: {workstation_dict.workstations[3].location}")
-
     heapq.heapify(event_dict.events) # list converted into heap
     
     while event := event_dict.get_next_event():
@@ -122,8 +127,8 @@ def run_simulation():
         job_id = event[3]
         workstation_id = event[4]
         workstation = workstation_dict.get_workstation(workstation_id)
-        #print(f"Next event: event_id: {event_id}, t: {t}, event_type: {event_type}, job_id: {job_id}, workstation_id: {workstation_id}")
 
+        #print(f"Next event: event_id: {event_id}, t: {t}, event_type: {event_type}, job_id: {job_id}, workstation_id: {workstation_id}")
 
         if event_type == "job_created":
             print(f"TIME: {t}, Handling jog creation: job {job_id} at source.")
@@ -217,10 +222,13 @@ Must calculate what workstation will be available first, then allocate job there
 def handle_job_waiting(job_id, workstation_id):
     job = job_dict.get_job(job_id)
     workstation = workstation_dict
-    previous_routing_phase = job.location
-    next_routing_phase = previous_routing_phase + 1
-    waiting_time = time_for_vacancy(next_routing_phase)
-    event_dict.add_event(t + waiting_time, "job_processing", job_id, workstation_id)
+    if job.location == workstation.id:
+        waiting_time = time_for_next_vacancy(job.location)
+        event_dict.add_event(t + waiting_time, "job_processing", job_id, workstation_id)
+    else:
+        target_location = job.location + 1
+        waiting_time = time_for_next_vacancy(target_location)
+        event_dict.add_event(t + waiting_time, "job_processing", job_id, workstation_id)
 
 
 """
@@ -282,8 +290,20 @@ Calculate processing time.
 
 
 def handle_job_processing(job_id, workstation_id):
+    workstation = workstation_dict.get_workstation(workstation_id)
     processing_time = calculate_processing_time(job_id, workstation_id)
+    workstation.time_when_freed = t + processing_time
     event_dict.add_event(t + processing_time, "job_phase_ready", job_id, workstation_id)
+
+
+def handle_workstation_malfunction():
+
+    return 1
+
+
+def handle_job_rework():
+
+    return 1
 
 
 def handle_workstation_ready():
@@ -301,16 +321,13 @@ def handle_workstation_congestion():
     return 1
 
 
-def load_test_settings():   ### Load 3 jobs, in a simple 1-1-1 prod.line.
-    create_workstations(3, [10, 25, 15], [0.01, 0.01, 0.01])
-    create_jobs(1, [1, 1, 1])
-    create_source("Job", workstation_dict.workstations[1], 0, "None", 0, 0)
-    return 0
-
-
-def time_for_vacancy(routing_phase):
-    
-    return 0
+def time_for_next_vacancy(location):
+    minimum_time = 0
+    for workstation in workstation_dict.values():
+        if minimum_time == 0 and workstation.location == location:
+            minimum_time = workstation.time_when_freed
+        if minimum_time > workstation.time_when_freed:
+            minimum_time = workstation.time_when_freed
 
 
 def job_has_more_steps_in_routing(job_id):
@@ -326,7 +343,6 @@ def calculate_processing_time(job_id, workstation_id):
     Job mean and true process times are vectors with same dimension as routing vector.
     """
     job = job_dict.get_job(job_id)
-    current_routing = job.location
     workstation = workstation_dict.get_workstation(workstation_id)
     true_processing_time = job.true_processing_time * workstation.true_capacity
     #print(f"Process will take: {true_processing_time} time. Job: {job.true_processing_time} WS: {workstation.true_capacity}")
