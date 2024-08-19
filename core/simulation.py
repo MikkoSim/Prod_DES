@@ -5,6 +5,7 @@
 ###
 ###
 
+
 import numpy as np
 import random
 from utils.utils import *
@@ -16,6 +17,7 @@ dt = 0.001
 workstation_dict = WorkstationManager()
 job_dict = JobManager()
 event_dict = EventManager()
+
 
 """
 Creates jobs. Updates JobManager with new jobs and creates events "job_arrival".
@@ -57,6 +59,7 @@ def create_workstations(workstation_vector, list_of_mean_times, cv_options):
     #        print("X")
     
     return 1
+
 
 """
 Creates single non-parallel workstations in series. Updates workstation manager with new workstations and creates events for empty workstations.
@@ -181,6 +184,7 @@ def handle_job_created(job_id, workstation_id):
         #print(f"Job {job_id} did not find vacant workstation.")
         event_dict.add_event(t, "job_waiting", job_id, workstation_id)
 
+
 """
 If workstation == None, then job has to be at the beginning of routing.
     => Place job at first routing step with vacant workstation
@@ -198,6 +202,7 @@ If workstation > 0, then routing is incremented.
         => Create job_waiting event
      
 """
+
 
 def handle_job_arrival(job_id, workstation_id):
     job = job_dict.get_job(job_id)
