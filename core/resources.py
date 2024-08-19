@@ -12,6 +12,19 @@ prod_line = [1,1,1]
 prod_line_var = [0,0,0]
 prod_line_cv = [0.66, 1, 1.33]
 
+
+"""
+DICTIONARIES
+
+"""
+
+
+"""
+WorkstationManager is a dictionary, stores Workstation objects.
+
+"""
+
+
 ### def __init__(self, id, location, true_capacity, mean_capacity, cv, std, status, wip, time_passed):
 class WorkstationManager:
     def __init__(self):
@@ -48,6 +61,13 @@ class WorkstationManager:
                 return True
         return False
 
+
+"""
+JobManager is a dictionary, stores Job objects.
+
+"""
+
+
 ### def __init__(self, id, routing, true_process_time, mean_process_time, status, cv, std):
 class JobManager:
     def __init__(self):
@@ -78,6 +98,13 @@ class JobManager:
     def remove_job(self, id):
         print("Unfinished\r\n")
         return 0
+
+
+"""
+EventManager is a dictionary, stores Event objects.
+
+"""
+
 
 class EventManager:
     def __init__(self):
@@ -123,6 +150,12 @@ class EventManager:
         return 0
 
 
+"""
+SourceManager is a dictionary, stores Source objects.
+
+"""
+
+
 class SourceManager:
     def __init__(self):
         self.sources = {}
@@ -135,18 +168,60 @@ class SourceManager:
 
 
 """
+RoutingNodeManager is a dictionary, stores RoutingNode objects.
+
+"""
+
+
+class RoutingNodeManager:
+    def __init__(self):
+        self.stages = {}
+        self.head_node = None
+
+
+"""
 SERVER OBJECTS
 
 """
+
+
+"""
+Base class Server.
+
+"""
+
 
 class Server:
     def __init__(self, id):
         self.id = id
 
+
 """
 Workstation capacity is represented here are as a multiplier and selected from a probability distribution function.
 
+Args:
+    id:
+
+    location:
+
+    bom:
+
+    true_capacity:
+
+    mean_capacity:
+
+    cv:
+
+    std:
+
+    status:
+
+    job:
+
+    time_when_freed:
+
 """
+
 
 class Workstation(Server):
     def __init__(self, id = -1, location = -1, true_capacity = 0, mean_capacity = 0, cv = 0, std = 0, status = "Vacant", job = None, time_when_freed = 0):
@@ -171,9 +246,43 @@ ENTITY OBJECTS
 
 """
 
+
+"""
+Base class Entity
+
+"""
+
+
 class Entity:
     def __init__(self, id):
         self.id = id
+
+
+"""
+Job
+
+Args:
+    id:
+
+    location:
+
+    bom:
+
+    true_capacity:
+
+    mean_capacity:
+
+    cv:
+
+    std:
+
+    status:
+
+    job:
+
+    time_when_freed:
+
+"""
 
 
 class Job(Entity):
@@ -191,13 +300,48 @@ class Job(Entity):
         self.true_processing_time = abs(np.random.normal(self.mean_processing_time, self.std, 1))
 
 
+"""
+Worker
+
+Args:
+    id:
+
+    location:
+
+    status:
+
+    job:
+
+"""
+
+
 class Worker(Entity):
     def __init__(self, id):
         self.id = id
 
+
+"""
+Material.
+
+Args:
+    id:
+
+    location:
+
+    bom:
+
+    status:
+
+    job:
+
+"""
+
+
 class Material(Entity):
     def __init__(self, id):
         self.id = id
+
+
 
 ### Job.status = {"Pending", "WIP", "Idle", "Complete"}
 ### Workstation.status = {"Vacant", "Received", "Processing", "Complete"}
@@ -205,15 +349,20 @@ class Material(Entity):
 ###                 "job_phase_ready", "job_completed", "workstation_ready", 
 ###                 "workstation_starvation", "workstation_congestion"}
 
+
 """
 ENVIRONMENT OBJECTS
 
 """
 
-class RoutingNodeManager:
-    def __init__(self):
-        self.stages = {}
-        self.head_node = None
+
+"""
+RoutingNode
+
+Args:
+
+"""
+
 
 
 class RoutingNode:
@@ -222,18 +371,17 @@ class RoutingNode:
         self.next_node = next_node
 
 
-class Event:
-    def __init__(self, id, type, status):
-        self.id = id
-        self.type = type
-        self.status = status
+"""
+Source
 
-    def update_event_time(self, id, new_time):
-        return 0
-    
-    def update_event_type(self, id, new_type):
-        return 0
-    
+Args:
+
+Methods:
+
+
+"""
+
+
 
 class Source:
     def __init__(self, id, source_type, target_object, num_of_elements, distr_func, mean, sigma):

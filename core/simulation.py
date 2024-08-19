@@ -6,7 +6,7 @@
 ###
 
 
-import numpy as np
+import numpy as nps
 import random
 from utils.utils import *
 from core.resources import *
