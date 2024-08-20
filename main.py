@@ -6,6 +6,7 @@ from gui.gui import GUI
 
 def main():
     root= tk.Tk()
+    #root.geometry("500x600")
     app = GUI(root)
     root.mainloop()
 

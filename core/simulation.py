@@ -307,7 +307,7 @@ def handle_workstation_malfunction():
 
 
 def handle_job_rework():
-
+    
     return 1
 
 
