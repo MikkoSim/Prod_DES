@@ -10,13 +10,19 @@ import numpy as nps
 import random
 from utils.utils import *
 from core.resources import *
+from gui.grad import *
 
 
 t = 0.0
 dt = 0.001
+
+
 workstation_dict = WorkstationManager()
 job_dict = JobManager()
+source_dict = SourceManager()
+routing_dict = RoutingNodeManager()
 event_dict = EventManager()
+
 
 
 """
