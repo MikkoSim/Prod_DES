@@ -9,8 +9,7 @@ import tkinter as tk
 from core.simulation import *
 from utils.utils import *
 from matplotlib.figure import Figure 
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  
-NavigationToolbar2Tk) 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk) 
 
 class GUI:
     def __init__(self, master):
