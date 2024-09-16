@@ -38,6 +38,7 @@ GUI LAYOUT SKETCH:
 def simulation_environment():
     # Canvas?
     # Tools to create and edit simulation environment. Workstation, worker, material objects... Edit these?
+     print(js_code)
      sim_script = gr.File("gui/sim_environment.js", visible=False)
      workstation_list_html = "".join([f'<li draggable="true" data-id="{w["id"]}">{w["name"]}</li>' for w in workstation_dict.workstations]) 
      sim_environment = gr.HTML(""" 

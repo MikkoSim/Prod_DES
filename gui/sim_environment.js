@@ -50,7 +50,7 @@ function testMsg() {
 // Drawing functions (replace with your actual visualization logic)
 function drawWorkstation(workstation) {
     ctx.fillStyle = 'blue';
-    ctx.fillRect(workstation.x, workstation.y, 50, 30);
+    ctx.fillRect(workstation.x, workstation.y, workstation.x + 50, workstation.y + 30);
     ctx.fillStyle = 'white';
     ctx.fillText(workstation.name, workstation.x + 10, workstation.y + 20);
 }
