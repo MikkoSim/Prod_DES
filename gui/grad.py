@@ -5,6 +5,12 @@ from core.resources import *
 with open("gui/sim_environment.js", "r") as js_script:
      js_code = js_script.read()
 
+with open("gui/main.html", "r") as html_page:
+     html_code = html_page.read()
+
+with open("gui/test.js", "r") as test_js:
+     test_js_code = "<script>" + test_js.read() + "</script>"
+
 
 def greet(name, intensity):
     return "Hello, " + name + "!" * int(intensity)
@@ -34,54 +40,50 @@ GUI LAYOUT SKETCH:
 """
 
 
-
-def simulation_environment():
-    # Canvas?
-    # Tools to create and edit simulation environment. Workstation, worker, material objects... Edit these?
-     print(js_code)
-     sim_script = gr.File("gui/sim_environment.js", visible=False)
-     workstation_list_html = "".join([f'<li draggable="true" data-id="{w["id"]}">{w["name"]}</li>' for w in workstation_dict.workstations]) 
-     sim_environment = gr.HTML(""" 
-                                <head>
-                                <canvas id ="simulationCanvas" width="600" height="400"></canvas>
-                                </head>
+"""
                                 <script>
 
                                 let canvas = document.getElementById('simulationCanvas');
                                 let ctx = canvas.getContext('2d');
 
                                 let blocks = [
-                                    {id: 1, name: 'Block 1', x: 0, y: 0}
+                                    {{id: 1, name: 'Block 1', x: 0, y: 0}}
                                 ];
 
-                                function drawBlocks(block) {
+                                function drawBlocks(block) {{
                                     ctx.fillStyle = 'blue';
                                     ctx.fillRect(block.x, block.y, 50, 30);
                                     ctx.fillStyle = 'white';
                                     ctx.fillText(block.name, block.x + 10, block.y + 20);
-                                }
+                                }}
 
-                                function initializeCanvas() {
+                                function initializeCanvas() {{
                                     canvas.style.border = '5px red';
                                     canvas.height = 600;
                                     canvas.width = 400;
-                                    if (blocks.length > 0) {
+                                    if (blocks.length > 0) {{
                                         drawBlocks(blocks[0]);
-                                    }
-                                }
+                                    }}
+                                }}
 
                                 //document.addEventListener('DOMContentLoaded', initializeCanvas);
 
                                 initializeCanvas();
 
                                 </script>
-                                <ul id="workstationList">
-                                    {workstation_list_html}
-                                </ul>
-                                """
-                                )
+"""
+
+
+def simulation_environment():
+    # Canvas?
+    # Tools to create and edit simulation environment. Workstation, worker, material objects... Edit these?
+     #sim_script = gr.File("gui/sim_environment.js", visible=False)
+     #workstation_list_html = "".join([f'<li draggable="true" data-id="{w["id"]}">{w["name"]}</li>' for w in workstation_dict.workstations]) 
+     sim_environment = gr.HTML(html_code)
      
-     # <script src="{sim_script}"></script>
+# f"""<canvas id="simulationCanvas" width="600" height="400" style="border: 5px solid red;"></canvas>"""
+
+     # <script>{js_code}</script>
                       
     # Embed the JavaScript code and HTML structure in a Gradio HTML component
      pass
@@ -121,15 +123,15 @@ def handle_simulation():
 def handle_jobs_button():
      create_jobs(10, [0.66, 1, 1.33])
 
-with gr.Blocks(js=js_code) as demo:
-    with gr.Row():
+
+with gr.Blocks(head=test_js_code) as demo:
+     with gr.Row():
           with gr.Column(scale = 1):
                simulation_controls()
           with gr.Column(scale = 5, variant="panel"):
                simulation_environment()
-    with gr.Row():
+     with gr.Row():
          simulation_console_output()
-    with gr.Row():
+     with gr.Row():
          simulation_console_input()
-
 
