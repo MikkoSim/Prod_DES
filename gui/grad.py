@@ -3,13 +3,14 @@ from core.simulation import *
 from core.resources import *
 
 with open("gui/sim_environment.js", "r") as js_script:
-     js_code = js_script.read()
+     js_code = "<script>" + js_script.read() + "</script>"
+     #js_code = js_script.read()
 
 with open("gui/main.html", "r") as html_page:
      html_code = html_page.read()
 
-with open("gui/test.js", "r") as test_js:
-     test_js_code = "<script>" + test_js.read() + "</script>"
+with open("gui/gradio_script.js", "r") as gradio_script:
+     gr_script = gradio_script.read()
 
 
 def greet(name, intensity):
@@ -80,10 +81,6 @@ def simulation_environment():
      #sim_script = gr.File("gui/sim_environment.js", visible=False)
      #workstation_list_html = "".join([f'<li draggable="true" data-id="{w["id"]}">{w["name"]}</li>' for w in workstation_dict.workstations]) 
      sim_environment = gr.HTML(html_code)
-     
-# f"""<canvas id="simulationCanvas" width="600" height="400" style="border: 5px solid red;"></canvas>"""
-
-     # <script>{js_code}</script>
                       
     # Embed the JavaScript code and HTML structure in a Gradio HTML component
      pass
@@ -124,7 +121,7 @@ def handle_jobs_button():
      create_jobs(10, [0.66, 1, 1.33])
 
 
-with gr.Blocks(head=test_js_code) as demo:
+with gr.Blocks(head=js_code, js=gr_script) as demo:
      with gr.Row():
           with gr.Column(scale = 1):
                simulation_controls()
