@@ -13,8 +13,14 @@ function test1() {
 
     console.log("DOMContentLoaded...");
     canvas = document.getElementById("simulationCanvas");
+    //canvas.addEventListener('onclick', testMsg);
     ctx = canvas.getContext("2d");
 
     initializeCanvas();
+
+    canvas.onmousedown = mouse_down;
+    canvas.onmouseup = mouse_up;
+    canvas.onmouseout = mouse_out;
+    canvas.onmousemove = mouse_move;
 
 }
