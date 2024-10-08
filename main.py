@@ -14,7 +14,8 @@ def main():
 """
 
 def main():
-    demo.launch()
+    #demo.launch()
+    pass
 
 if __name__ == "__main__":
     main()

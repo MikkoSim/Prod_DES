@@ -1,0 +1,1 @@
+(s) => [workstations[0]]

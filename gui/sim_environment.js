@@ -30,7 +30,7 @@ function rnd_num() {
 // Drawing functions (replace with your actual visualization logic)
 function drawWorkstation(workstation) {
     ctx.fillStyle = "blue";
-    ctx.fillRect(workstation.x, workstation.y, workstation.x + 80, workstation.y + 30);
+    ctx.fillRect(workstation.x, workstation.y, 80, 30);
     ctx.fillStyle = "white";
     ctx.fillText(workstation.name, workstation.x + 10, workstation.y + 20);
     console.log("Drew workstation at: (X: ", workstation.x, ", Y: ", workstation.y, ")");
@@ -57,13 +57,11 @@ function updateCanvas() {
     for (let workstation of workstations) {
         drawWorkstation(workstation);
     }
-}
+  }
 
 
 
 
-
-//let canvas = document.getElementById("simulationCanvas");
 let canvas = null;
 let ctx = null;
 let draggedWorkstation = null;
@@ -149,8 +147,19 @@ let mouse_move = function(event) {
         workstations[current_workstation_index].x += dx;
         workstations[current_workstation_index].y += dy;
 
-        console.log("Workstation moved from: (X: ", startX, ", Y: ", startY, ")");
-        console.log("To: (X: ", mouseX, ", Y: ", mouseY, ")");
+        //const customEvent = new CustomEvent("workstation_moved", { detail: { x: mouseX, y: mouseY } });
+        //console.log("Workstation_moved event:", customEvent);
+        //document.dispatchEvent(customEvent);
+
+        //outputTextbox = document.querySelector("#output_textbox");  // Use 'textarea' for gr.Textbox
+        //console.log(outputTextbox);
+        //outputTextbox.value = '<span class="math-inline">\{x\},</span>{y}';
+        
+
+        //updateWorkstationState({ x: mouseX, y: mouseY }); // Call the JavaScript function to send data to Python
+
+        //console.log("Workstation moved from: (X: ", startX, ", Y: ", startY, ")");
+        //console.log("To: (X: ", mouseX, ", Y: ", mouseY, ")");
 
         updateCanvas();
 
@@ -161,41 +170,6 @@ let mouse_move = function(event) {
 }
 
 
-/*
-
-// Drag-and-drop functionality
-
-test_workstation.addEventListener('dragstart', (event) => {
-    draggedWorkstation = event.target;
+document.addEventListener("DOMContentLoaded", (event) => {
+    updateWorkstationState(100, 100); // Example initial coordinates
 });
-
-
-canvas.addEventListener('dragover', (event) => {
-    event.preventDefault();
-});
-
-
-canvas.addEventListener('drop', (event) => {
-    event.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;  
-
-    // Create a new workstation on the canvas (replace with your actual logic)
-    
-    const newWorkstation = { 
-        id: draggedWorkstation.dataset.id, 
-        name: draggedWorkstation.textContent,
-        x,
-        y
-    };
-    drawWorkstation(newWorkstation);
-    
-
-    // ... (Add the new workstation to your simulation data)
-});
-
-*/
-
-
-
